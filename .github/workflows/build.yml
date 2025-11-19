@@ -30,6 +30,8 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: '1.21'
+          cache: false
+          cache: false
       - name: Build Windows EXE
         run: go build -o AlgorithmicAlertSystem_x64.exe ./cmd/gui
       - name: Upload EXE artifact
@@ -53,7 +55,9 @@ jobs:
           go install golang.org/x/mobile/cmd/gomobile@latest
           $(go env GOPATH)/bin/gomobile init
       - name: Build mobile AAR
+        if: ${{ hashFiles('alertcenter/android-app/settings.gradle') != '' }}
         run: |
+          mkdir -p android-app/app/libs
           $(go env GOPATH)/bin/gomobile bind -target=android -javapkg com.algalert.mobile -o android-app/app/libs/mobile.aar ./mobile
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -64,15 +68,21 @@ jobs:
         uses: android-actions/setup-android@v3
       - name: Accept Android licenses
         run: yes | sdkmanager --licenses
+      - name: Install required SDK components
+        run: |
+          sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
       - name: Setup Gradle
         uses: gradle/gradle-build-action@v2
       - name: Generate Gradle wrapper
+        if: ${{ hashFiles('alertcenter/android-app/settings.gradle') != '' }}
         run: gradle wrapper --gradle-version 8.2
         working-directory: alertcenter/android-app
       - name: Build APK (debug)
+        if: ${{ hashFiles('alertcenter/android-app/settings.gradle') != '' }}
         run: ./gradlew :app:assembleDebug
         working-directory: alertcenter/android-app
       - name: Upload APK artifact
+        if: ${{ hashFiles('alertcenter/android-app/app/build/outputs/apk/debug/app-debug.apk') != '' }}
         uses: actions/upload-artifact@v4
         with:
           name: android-apk
@@ -141,5 +151,9 @@ jobs:
               "https://uploads.github.com/repos/$DEST_OWNER/$DEST_REPO/releases/$rel_id/assets?name=$fname"
           }
           upload "AlgorithmicAlertSystem_x64.exe" artifacts/windows-exe/AlgorithmicAlertSystem_x64.exe
-          upload "app-debug.apk" artifacts/android-apk/app-debug.apk
+          if [ -f "artifacts/android-apk/app-debug.apk" ]; then
+            upload "app-debug.apk" artifacts/android-apk/app-debug.apk
+          else
+            echo "Android APK not found, skipping upload"
+          fi
           upload "SHA256SUMS.txt" artifacts/SHA256SUMS.txt
