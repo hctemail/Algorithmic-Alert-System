@@ -55,7 +55,7 @@ jobs:
           go install golang.org/x/mobile/cmd/gomobile@latest
           $(go env GOPATH)/bin/gomobile init
       - name: Build mobile AAR
-        if: ${{ hashFiles('alertcenter/android-app/settings.gradle') != '' }}
+        if: ${{ hashFiles('alertcenter/mobile/go.mod') != '' }}
         run: |
           mkdir -p android-app/app/libs
           $(go env GOPATH)/bin/gomobile bind -target=android -javapkg com.algalert.mobile -o android-app/app/libs/mobile.aar ./mobile
@@ -75,7 +75,7 @@ jobs:
         uses: gradle/gradle-build-action@v2
       - name: Generate Gradle wrapper
         if: ${{ hashFiles('alertcenter/android-app/settings.gradle') != '' }}
-        run: gradle wrapper --gradle-version 8.2
+        run: gradle wrapper --gradle-version 8.5
         working-directory: alertcenter/android-app
       - name: Build APK (debug)
         if: ${{ hashFiles('alertcenter/android-app/settings.gradle') != '' }}
